@@ -38,34 +38,13 @@ redis_vector_search/
 └── README.md           # This file
 ```
 
-## Quick Start
 
-### 1. Start Redis
-
-```bash
-docker-compose up -d
-```
-
-Verify it's running:
-```bash
-docker-compose ps
-```
-
-### 2. Install Dependencies (using uv)
+### 1. Install Dependencies (using uv)
 
 ```bash
-# Install uv if you haven't already
-# See: https://docs.astral.sh/uv/getting-started/installation/
-
-# Sync dependencies (creates .venv automatically)
 uv sync
 ```
-
-That's it! `uv sync` reads `pyproject.toml`, creates a virtual environment, and installs all dependencies.
-
-### 3. Ingest Documents
-
-Place your PDF file in the project directory (or update `PDF_FILE_PATH` in `config.py`), then run:
+### 2 Ingest Documents
 
 ```bash
 uv run python ingest.py
@@ -81,7 +60,7 @@ To clear existing data first:
 uv run python ingest.py --flush
 ```
 
-### 4. Run Queries
+### 3. Run Queries
 
 Single query:
 ```bash
@@ -97,9 +76,6 @@ Interactive mode:
 ```bash
 uv run python query.py --interactive
 ```
-
-> **Note:** `uv run` automatically uses the project's virtual environment. You don't need to activate it manually.
-
 ## Configuration
 
 All settings are in `config.py`:
@@ -120,45 +96,6 @@ Two models are pre-configured:
 |-------|------------|-------|---------|
 | `all-MiniLM-L6-v2` | 384 | Fast | Good |
 | `all-mpnet-base-v2` | 768 | Slower | Higher |
-
-**Important**: Use the same model for both ingestion and queries!
-
-## Usage Examples
-
-### Python API
-
-```python
-from redis_client import get_redis_client
-from search import search, format_results
-
-# Connect
-client = get_redis_client()
-
-# Search
-results = search(client, "reconnaissance drones", top_k=5)
-
-# Display
-print(format_results(results))
-
-# Or work with results directly
-for result in results:
-    print(f"{result.rank}. {result.title} (score: {result.score:.3f})")
-```
-
-### Filtered Search
-
-```python
-from search import search_with_filter
-
-# Search only in specific source files
-results = search_with_filter(
-    client,
-    query_text="helicopters",
-    filter_field="source_file",
-    filter_value="Army_Equipment_Guide.pdf",
-    top_k=5
-)
-```
 
 ## Quick Reference
 
