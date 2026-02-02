@@ -1,0 +1,22 @@
+[project]
+name = "redis-vector-search"
+version = "0.1.0"
+description = "Semantic search system using Redis Stack as a vector database"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pymupdf>=1.24.0",
+    "sentence-transformers>=2.2.0",
+    "redis>=5.0.0",
+    "numpy>=1.24.0",
+]
+
+[project.scripts]
+ingest = "ingest:main"
+query = "query:main"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0.0",
+    "ipython>=8.0.0",
+]
