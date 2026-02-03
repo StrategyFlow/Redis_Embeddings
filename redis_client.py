@@ -23,10 +23,10 @@ def get_redis_client() -> redis.Redis:
     # Verify connection
     try:
         client.ping()
-        print(f"✓ Connected to Redis at {REDIS_HOST}:{REDIS_PORT}")
+        print(f"Connected to Redis at {REDIS_HOST}:{REDIS_PORT}")
     except redis.ConnectionError as e:
-        print(f"✗ Failed to connect to Redis: {e}")
-        print("  Make sure Redis is running (docker-compose up -d)")
+        print(f"Failed to connect to Redis: {e}")
+        print("Make sure Redis is running")
         raise
     
     return client
@@ -44,11 +44,11 @@ def flush_database(client: redis.Redis, confirm: bool = True) -> bool:
         bool: True if database was flushed, False otherwise.
     """
     if confirm:
-        response = input("⚠ This will delete ALL data in the database. Continue? (y/N): ")
+        response = input("This will delete ALL data in the database. Continue? (y/N): ")
         if response.lower() != 'y':
-            print("  Cancelled.")
+            print("Cancelled.")
             return False
     
     client.flushdb()
-    print("✓ Database flushed.")
+    print("Database flushed.")
     return True

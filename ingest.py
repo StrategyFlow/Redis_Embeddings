@@ -43,7 +43,7 @@ def main(pdf_path: str | None = None, flush: bool = False, preview: bool = False
     
     # Verify PDF exists
     if not Path(pdf_path).exists():
-        print(f"\n✗ Error: PDF file not found: {pdf_path}")
+        print(f"\nError: PDF file not found: {pdf_path}")
         sys.exit(1)
     
     # Parse PDF into structured entries
@@ -52,8 +52,8 @@ def main(pdf_path: str | None = None, flush: bool = False, preview: bool = False
     # Preview mode - show entries and exit
     if preview:
         preview_entries(entries, count=10)
-        print(f"\n✓ Preview complete. {len(entries)} entries parsed.")
-        print("  Run without --preview to ingest into Redis.")
+        print(f"\nPreview complete. {len(entries)} entries parsed.")
+        print("Run without --preview to ingest into Redis.")
         return
     
     # Connect to Redis
@@ -75,8 +75,8 @@ def main(pdf_path: str | None = None, flush: bool = False, preview: bool = False
     print(f"\n{'='*60}")
     print("INGESTION COMPLETE")
     print('='*60)
-    print(f"  Index: {info['index_name']}")
-    print(f"  Documents: {info['num_docs']}")
+    print(f"Index: {info['index_name']}")
+    print(f"Documents: {info['num_docs']}")
     print("\nYou can now run queries using: python query.py \"your search query\"")
 
 

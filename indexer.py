@@ -56,7 +56,7 @@ def create_index(client: redis.Redis, vector_dim: int | None = None) -> None:
     definition = IndexDefinition(prefix=[DOC_PREFIX], index_type=IndexType.HASH)
     client.ft(INDEX_NAME).create_index(schema, definition=definition)
     
-    print(f"  ✓ Created index '{INDEX_NAME}' (vector_dim={vector_dim})")
+    print(f"Created index '{INDEX_NAME}' (vector_dim={vector_dim})")
 
 
 def store_entries(
@@ -82,7 +82,7 @@ def store_entries(
     # Create/recreate the index
     create_index(client, vector_dim=embeddings.shape[1])
     
-    print(f"  Storing {len(entries)} entries...")
+    print(f"Storing {len(entries)} entries...")
     
     # Use pipeline for efficient batch insertion
     pipeline = client.pipeline()
@@ -102,7 +102,7 @@ def store_entries(
     # Execute all commands
     pipeline.execute()
     
-    print(f"  ✓ Stored {len(entries)} entries in index '{INDEX_NAME}'")
+    print(f"Stored {len(entries)} entries in index '{INDEX_NAME}'")
     return len(entries)
 
 

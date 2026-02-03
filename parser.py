@@ -28,7 +28,7 @@ def extract_text_from_pdf(pdf_path: str) -> str:
         for page in doc:
             full_text += page.get_text()
     
-    print(f"  ✓ Extracted text from {page_count} pages ({len(full_text):,} characters)")
+    print(f"Extracted text from {page_count} pages ({len(full_text):,} characters)")
     return full_text
 
 
@@ -170,9 +170,9 @@ def parse_pdf(pdf_path: str) -> list[EquipmentEntry]:
     full_text = extract_text_from_pdf(pdf_path)
     
     # Split into raw entries
-    print("  Splitting into entries...")
+    print("Splitting into entries...")
     raw_entries = split_into_raw_entries(full_text)
-    print(f"  ✓ Found {len(raw_entries)} raw entries")
+    print(f"Found {len(raw_entries)} raw entries")
     
     # Parse each entry
     print("  Parsing entries...")
@@ -186,14 +186,14 @@ def parse_pdf(pdf_path: str) -> list[EquipmentEntry]:
         else:
             failed_count += 1
     
-    print(f"  ✓ Successfully parsed {len(entries)} entries")
+    print(f"Successfully parsed {len(entries)} entries")
     if failed_count > 0:
-        print(f"  ⚠ Failed to parse {failed_count} entries")
+        print(f"Failed to parse {failed_count} entries")
     
     # Deduplicate
-    print("  Deduplicating...")
+    print("Deduplicating...")
     entries = deduplicate_entries(entries)
-    print(f"  ✓ {len(entries)} unique entries after deduplication")
+    print(f" {len(entries)} unique entries after deduplication")
     
     return entries
 

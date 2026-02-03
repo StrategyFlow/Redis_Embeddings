@@ -28,13 +28,15 @@ redis_vector_search/
 ├── pyproject.toml      # Project config & dependencies (for uv)
 ├── config.py           # All configuration settings
 ├── redis_client.py     # Redis connection utilities
-├── pdf_processor.py    # PDF text extraction and chunking
+├── parser.py           # PDF text extraction and chunking
 ├── embeddings.py       # Embedding model and generation
 ├── indexer.py          # Redis index management
-├── search.py           # Query and search functionality
+├── query.py            # Query and search functionality
 ├── ingest.py           # Main ingestion script
 ├── query.py            # Main query script
 ├── docker-compose.yaml # Redis Stack container
+├── models.py           # Defines the data structure for equipment entries
+├── search.py           # The actual KNN search functionality
 └── README.md           # This file
 ```
 
@@ -76,17 +78,6 @@ Interactive mode:
 ```bash
 uv run python query.py --interactive
 ```
-## Configuration
-
-All settings are in `config.py`:
-
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `REDIS_HOST` | Redis server hostname | `localhost` |
-| `REDIS_PORT` | Redis server port | `6379` |
-| `INDEX_NAME` | Name of the search index | `army_equipment_idx` |
-| `EMBEDDING_MODEL` | Sentence transformer model | `all-MiniLM-L6-v2` |
-| `DEFAULT_TOP_K` | Default number of results | `5` |
 
 ### Embedding Models
 
@@ -102,9 +93,6 @@ Two models are pre-configured:
 | Task | Command |
 |------|---------|
 | Install dependencies | `uv sync` |
-| Start Redis | `docker-compose up -d` |
-| Stop Redis | `docker-compose down` |
-| View Redis logs | `docker-compose logs -f` |
 | Ingest PDF | `uv run python ingest.py` |
 | Ingest + clear old data | `uv run python ingest.py --flush` |
 | Single query | `uv run python query.py "search terms"` |
