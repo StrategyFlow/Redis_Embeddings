@@ -87,6 +87,7 @@ Two models are pre-configured:
 |-------|------------|-------|---------|
 | `all-MiniLM-L6-v2` | 384 | Fast | Good |
 | `all-mpnet-base-v2` | 768 | Slower | Higher |
+| `llama-embed-nemotron-8b` | 4096 | Slow (GPU Required) | Highest |
 
 ## Quick Reference
 
