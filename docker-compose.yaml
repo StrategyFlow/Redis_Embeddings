@@ -1,3 +1,13 @@
+# Redis Stack with Vector Search Support
+# 
+# Start: docker-compose up -d
+# Stop:  docker-compose down
+# View logs: docker-compose logs -f
+# 
+# Access points:
+#   - Redis: localhost:6379
+#   - RedisInsight (Web UI): http://localhost:8001
+
 services:
   redis:
     image: redis/redis-stack:latest
@@ -8,7 +18,9 @@ services:
     ports:
       - "6379:6379"    # Redis server
       - "8001:8001"    # RedisInsight web interface
-    
+    # Optional: Uncomment to set a password
+    # environment:
+    #   REDIS_ARGS: "--requirepass yourpassword"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s

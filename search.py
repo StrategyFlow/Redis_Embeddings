@@ -19,17 +19,18 @@ class SearchResult:
     """Represents a single search result."""
     rank: int
     score: float  # Similarity score (0-1, higher is more similar)
-    title: str
     content: str
     source_file: str
+    chunk_index: int
     doc_id: str
+    metadata: str = ""
 
 
 def deduplicate_results(results: list[SearchResult]) -> list[SearchResult]:
     """
-    Remove duplicate results based on title.
+    Remove duplicate results based on content hash.
     
-    Keeps the highest-scored result for each unique title.
+    Keeps the highest-scored result for each unique content.
     
     Args:
         results: List of search results (assumed sorted by score).
@@ -37,12 +38,14 @@ def deduplicate_results(results: list[SearchResult]) -> list[SearchResult]:
     Returns:
         list[SearchResult]: Deduplicated results with updated ranks.
     """
-    seen_titles = set()
+    seen_content = set()
     unique_results = []
     
     for result in results:
-        if result.title not in seen_titles:
-            seen_titles.add(result.title)
+        # Use first 100 chars as a simple dedup key
+        content_key = result.content[:100]
+        if content_key not in seen_content:
+            seen_content.add(content_key)
             unique_results.append(result)
     
     # Re-rank after deduplication
@@ -70,7 +73,7 @@ def search(
     Returns:
         list[SearchResult]: Ranked list of search results.
     """
-    return_fields = return_fields or ["title", "notes", "domain", "origin", "source_file"]
+    return_fields = return_fields or ["content", "source_file", "chunk_index", "metadata"]
     
     # Generate query embedding
     print(f"  Embedding query: '{query_text}'")
@@ -103,10 +106,11 @@ def search(
         result = SearchResult(
             rank=i + 1,
             score=similarity,
-            title=getattr(doc, "title", "Unknown"),
-            content=getattr(doc, "notes", ""),
+            content=getattr(doc, "content", ""),
             source_file=getattr(doc, "source_file", "Unknown"),
-            doc_id=doc.id
+            chunk_index=int(getattr(doc, "chunk_index", 0)),
+            doc_id=doc.id,
+            metadata=getattr(doc, "metadata", ""),
         )
         search_results.append(result)
     
@@ -115,21 +119,19 @@ def search(
     return unique_results[:top_k]
 
 
-def search_with_filter(
+def search_by_source(
     client: redis.Redis,
     query_text: str,
-    filter_field: str,
-    filter_value: str,
+    source_file: str,
     top_k: int = DEFAULT_TOP_K
 ) -> list[SearchResult]:
     """
-    Perform a filtered semantic similarity search.
+    Perform a filtered semantic similarity search by source file.
     
     Args:
         client: Redis client instance.
         query_text: The search query.
-        filter_field: Field name to filter on (must be TagField).
-        filter_value: Value to filter for.
+        source_file: Source filename to filter by.
         top_k: Number of results to return.
         
     Returns:
@@ -140,13 +142,13 @@ def search_with_filter(
     query_vector_bytes = query_vector.tobytes()
     
     # Build filtered KNN query
-    filter_expr = f"@{filter_field}:{{{filter_value}}}"
+    filter_expr = f"@source_file:{{{source_file}}}"
     base_query = f"({filter_expr})=>[KNN {top_k} @vector $query_vec AS vector_score]"
     
     q = (
         Query(base_query)
         .sort_by("vector_score")
-        .return_fields("title", "notes", "domain", "origin", "source_file", "vector_score")
+        .return_fields("content", "source_file", "chunk_index", "metadata", "vector_score")
         .dialect(2)
     )
     
@@ -163,10 +165,11 @@ def search_with_filter(
         result = SearchResult(
             rank=i + 1,
             score=similarity,
-            title=getattr(doc, "title", "Unknown"),
-            content=getattr(doc, "notes", ""),
+            content=getattr(doc, "content", ""),
             source_file=getattr(doc, "source_file", "Unknown"),
-            doc_id=doc.id
+            chunk_index=int(getattr(doc, "chunk_index", 0)),
+            doc_id=doc.id,
+            metadata=getattr(doc, "metadata", ""),
         )
         search_results.append(result)
     
@@ -196,8 +199,7 @@ def format_results(results: list[SearchResult], max_content_length: int = 500) -
         
         lines.extend([
             f"\n[{result.rank}] Score: {result.score:.4f}",
-            f"    Title: {result.title}",
-            f"    Source: {result.source_file}",
+            f"    Source: {result.source_file} (chunk {result.chunk_index})",
             f"    Content: {content_preview}"
         ])
     

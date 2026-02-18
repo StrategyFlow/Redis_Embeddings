@@ -4,7 +4,7 @@ Provides search functionality for the RAG agent.
 """
 
 from redis_client import get_redis_client
-from search import search_documents
+from search import search as search_documents
 from embeddings import load_model, generate_embedding
 
 
@@ -22,17 +22,16 @@ class EmbeddingsService:
             top_k: Number of results to return
             
         Returns:
-            List of {content, title, score, source}
+            List of {content, score, source_file, chunk_index}
         """
         results = search_documents(self.client, query, top_k)
         return [
             {
-                "content": r.get("notes", ""),
-                "title": r.get("title", ""),
-                "score": r.get("score", 0.0),
-                "source": r.get("source_file", ""),
-                "domain": r.get("domain", ""),
-                "origin": r.get("origin", ""),
+                "content": r.content,
+                "score": r.score,
+                "source_file": r.source_file,
+                "chunk_index": r.chunk_index,
+                "doc_id": r.doc_id,
             }
             for r in results
         ]

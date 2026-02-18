@@ -36,7 +36,7 @@ def run_query(query_text: str, top_k: int = DEFAULT_TOP_K) -> None:
     # Check index exists
     info = get_index_info(client)
     if info.get("num_docs", 0) == 0:
-        print("\nError: No documents in index. Run ingest.py first.")
+        print("\n✗ Error: No documents in index. Run ingest.py first.")
         sys.exit(1)
     
     print(f"Searching {info['num_docs']} documents...")

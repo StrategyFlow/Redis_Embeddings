@@ -8,7 +8,7 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 
 from config import EMBEDDING_MODEL, VECTOR_DIMENSIONS
-from models import EquipmentEntry
+from models import DocumentChunk
 
 
 # Module-level cache for the model (avoid reloading)
@@ -35,6 +35,11 @@ def get_model(model_name: str | None = None) -> SentenceTransformer:
     return _model_cache[model_name]
 
 
+def load_model(model_name: str | None = None) -> SentenceTransformer:
+    """Alias for get_model for compatibility."""
+    return get_model(model_name)
+
+
 def get_vector_dimension(model_name: str | None = None) -> int:
     """
     Get the vector dimension for the specified model.
@@ -55,28 +60,24 @@ def get_vector_dimension(model_name: str | None = None) -> int:
     return model.get_sentence_embedding_dimension()
 
 
-def generate_embeddings(entries: list[EquipmentEntry]) -> np.ndarray:
+def generate_embeddings(chunks: list[DocumentChunk]) -> np.ndarray:
     """
-    Generate embeddings for a list of equipment entries.
+    Generate embeddings for a list of document chunks.
     
     Uses the to_embed_text() method to get optimized text for embedding.
     
     Args:
-        entries: List of EquipmentEntry objects to embed.
+        chunks: List of DocumentChunk objects to embed.
         
     Returns:
-        np.ndarray: Array of embeddings with shape (n_entries, embedding_dim).
+        np.ndarray: Array of embeddings with shape (n_chunks, embedding_dim).
     """
-    print(f"\n{'='*60}")
-    print("STEP 2: Generating Embeddings")
-    print('='*60)
-    
     model = get_model()
     
-    # Use the structured embed text, not raw text
-    texts = [entry.to_embed_text() for entry in entries]
+    # Use the structured embed text
+    texts = [chunk.to_embed_text() for chunk in chunks]
     
-    print(f"  Embedding {len(texts)} entries...")
+    print(f"  Embedding {len(texts)} chunks...")
     embeddings = model.encode(texts, show_progress_bar=True)
     
     print(f"  ✓ Generated embeddings with shape: {embeddings.shape}")
@@ -96,3 +97,16 @@ def embed_query(query: str) -> np.ndarray:
     model = get_model()
     embedding = model.encode(query)
     return embedding.astype(np.float32)
+
+
+def generate_embedding(text: str) -> np.ndarray:
+    """
+    Generate an embedding for a single text string.
+    
+    Args:
+        text: The text to embed.
+        
+    Returns:
+        np.ndarray: The embedding vector.
+    """
+    return embed_query(text)
