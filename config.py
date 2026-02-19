@@ -8,7 +8,7 @@ All configurable parameters are centralized here for easy management.
 # Redis Connection Settings
 # =============================================================================
 # Toggle between local and Ares server
-USE_LOCAL_REDIS = True
+USE_LOCAL_REDIS = False
 
 # Local Redis (Docker)
 LOCAL_REDIS_HOST = "localhost"
@@ -46,7 +46,7 @@ VECTOR_DIMENSIONS = {
 # =============================================================================
 # Chunking Settings
 # =============================================================================
-CHUNK_SIZE = 500      # words per chunk
+CHUNK_SIZE = 250      # words per chunk
 CHUNK_OVERLAP = 50    # overlapping words between chunks
 
 # =============================================================================

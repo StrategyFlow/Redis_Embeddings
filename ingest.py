@@ -14,6 +14,7 @@ Usage:
     python ingest.py doc1.pdf doc2.txt      # Ingest multiple files
     python ingest.py --flush document.pdf   # Clear database before ingesting
     python ingest.py --preview document.pdf # Preview chunks without storing
+    python ingest.py --listen               # Listen for documents on pub/sub channel
 """
 
 import sys
@@ -25,6 +26,7 @@ from chunker import chunk_document, deduplicate_chunks
 from embeddings import generate_embeddings
 from indexer import store_chunks, get_index_info
 from models import DocumentChunk
+from config import REDIS_HOST, REDIS_PORT
 
 
 def process_document(file_path: str | Path) -> list[DocumentChunk]:
@@ -46,12 +48,12 @@ def process_document(file_path: str | Path) -> list[DocumentChunk]:
     # Extract text
     print(f"  Extracting text from '{file_path.name}'...")
     text = extract_text(file_path)
-    print(f"  ✓ Extracted {len(text):,} characters")
+    print(f"  Extracted {len(text):,} characters")
     
     # Chunk the text
     print(f"  Chunking text...")
     chunks = chunk_document(text, source_file=file_path.name)
-    print(f"  ✓ Created {len(chunks)} chunks")
+    print(f"  Created {len(chunks)} chunks")
     
     # Deduplicate
     unique_chunks = deduplicate_chunks(chunks)
@@ -75,7 +77,77 @@ def preview_chunks(chunks: list[DocumentChunk], count: int = 5) -> None:
         print(f"Embed text preview: {chunk.to_embed_text()[:300]}...")
 
 
-def main(file_paths: list[str], flush: bool = False, preview: bool = False) -> None:
+def ingest_document(file_path: str, client) -> dict:
+    """
+    Full ingestion pipeline for a single document.
+    
+    Args:
+        file_path: Path to the document.
+        client: Redis client.
+        
+    Returns:
+        dict: Statistics about the ingestion.
+    """
+    # Process document
+    chunks = process_document(file_path)
+    
+    # Generate embeddings
+    print(f"\n{'='*60}")
+    print("STEP 2: Generating Embeddings")
+    print('='*60)
+    embeddings = generate_embeddings(chunks)
+    
+    # Store in Redis
+    store_chunks(client, chunks, embeddings)
+    
+    return {
+        "file": Path(file_path).name,
+        "chunks": len(chunks),
+    }
+
+
+def listen_mode(client) -> None:
+    """
+    Run in pub/sub listener mode for continuous document processing.
+    
+    Listens on channel: documents_to_embed
+    Publishes completion to: embedding_complete
+    """
+    print("\n" + "="*60)
+    print("LISTENER MODE")
+    print("="*60)
+    print(f"Redis: {REDIS_HOST}:{REDIS_PORT}")
+    print("Subscribing to channel: documents_to_embed")
+    print("Press Ctrl+C to stop\n")
+    
+    pubsub = client.pubsub()
+    pubsub.subscribe("documents_to_embed")
+    
+    for message in pubsub.listen():
+        if message['type'] == 'message':
+            file_path = message['data']
+            print(f"\n📄 Received: {file_path}")
+            
+            try:
+                # Check file exists
+                if not Path(file_path).exists():
+                    print(f"  ✗ File not found: {file_path}")
+                    client.publish("embedding_complete", f"{file_path}|error|File not found")
+                    continue
+                
+                # Ingest
+                stats = ingest_document(file_path, client)
+                
+                # Publish completion
+                client.publish("embedding_complete", f"{file_path}|success|{stats['chunks']} chunks")
+                print(f"  ✓ Published completion for {file_path}")
+                
+            except Exception as e:
+                client.publish("embedding_complete", f"{file_path}|error|{str(e)}")
+                print(f"  ✗ Error processing {file_path}: {e}")
+
+
+def main(file_paths: list[str], flush: bool = False, preview: bool = False, listen: bool = False) -> None:
     """
     Main ingestion pipeline.
     
@@ -83,9 +155,20 @@ def main(file_paths: list[str], flush: bool = False, preview: bool = False) -> N
         file_paths: Paths to documents to ingest.
         flush: If True, flush database before ingesting.
         preview: If True, only preview chunks without storing.
+        listen: If True, run in pub/sub listener mode.
     """
+    # Connect to Redis
+    print("\nConnecting to Redis...")
+    client = get_redis_client()
+    
+    # Listener mode
+    if listen:
+        listen_mode(client)
+        return
+    
     if not file_paths:
         print("Error: No files specified.")
+        print("Use --listen for pub/sub mode or provide file paths.")
         print(__doc__)
         sys.exit(1)
     
@@ -115,10 +198,6 @@ def main(file_paths: list[str], flush: bool = False, preview: bool = False) -> N
         print("  Run without --preview to ingest into Redis.")
         return
     
-    # Connect to Redis
-    print("\nConnecting to Redis...")
-    client = get_redis_client()
-    
     # Optionally flush database
     if flush:
         flush_database(client, confirm=True)
@@ -147,16 +226,19 @@ if __name__ == "__main__":
     file_paths = []
     flush = False
     preview = False
+    listen = False
     
     for arg in sys.argv[1:]:
         if arg == "--flush":
             flush = True
         elif arg == "--preview":
             preview = True
+        elif arg == "--listen":
+            listen = True
         elif arg in ["-h", "--help"]:
             print(__doc__)
             sys.exit(0)
         else:
             file_paths.append(arg)
     
-    main(file_paths=file_paths, flush=flush, preview=preview)
+    main(file_paths=file_paths, flush=flush, preview=preview, listen=listen)
